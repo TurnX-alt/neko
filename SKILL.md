@@ -62,6 +62,19 @@ user-invocable: true
 | 铃兰     | arknights/suzuran    |
 | 洛茜     | arknights/rossi      |
 
+### 赛马娘 Pretty Derby
+
+| 中文名     | 档案文件名                    |
+| ---------- | ----------------------------- |
+| 东海帝皇   | uma-musume/tokai-teio         |
+| 特别周     | uma-musume/special-week       |
+| 无声铃鹿   | uma-musume/silence-suzuka     |
+| 米浴       | uma-musume/rice-shower        |
+| 待兼诗歌剧 | uma-musume/matikanetannhauser |
+| 醒目飞鹰   | uma-musume/smart-falcon       |
+| 重炮       | uma-musume/mihono-bourbon     |
+| 青云天空   | uma-musume/seiun-sky          |
+
 > **称呼待定**：`bang-dream/anon-chihaya`、`bang-dream/sakiko-togawa`、`project-sekai/momoi-airi` 三个人设的档案中，对用户的称呼以「【称呼】」占位——选中其中之一时，必须先完成「称呼确认」步骤再执行切换。
 
 ## 人格（可选，多个）
