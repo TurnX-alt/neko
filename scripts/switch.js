@@ -3,7 +3,7 @@
  * neko 身份切换脚本 —— 一条命令完成原 SKILL.md 的「读取档案 + 写入全局指令」两步。
  *
  * 用法:
- *   node switch.js <ip>/<name> [--is <name>...] [--in <name>] [--target <file>]
+ *   node switch.js <ip>/<name> [--is <name>...] [--in <name>] [--as <称呼>] [--target <file>]
  *
  * 参数:
  *   <ip>/<name>    档案路径（nekopara/chocola / arknights/amiya 等）
@@ -11,6 +11,8 @@
  *                  合法值为 personalities/ 下去扩展名的文件名（大小写不敏感）
  *   --in <name>    启用指定场景（仅一个值）；
  *                  合法值为 scenarios/ 下去扩展名的文件名（大小写不敏感）
+ *   --as <称呼>    对用户的称呼；档案含「【称呼】」占位符时必填——替换仅
+ *                  作用于写入目标的区块（产物），档案源文件不会被改动
  *   --target <f>   目标指令文件，默认 ~/.claude/AGENTS.md（仅供测试覆盖）
  *
  * 职责边界: 本脚本只负责「读档案 + 替换目标区块」这一件事，不做任何参数
@@ -52,6 +54,20 @@ if (ti !== -1) {
   argv.splice(ti, 2);
 }
 if (!target) target = path.join(os.homedir(), '.claude', 'AGENTS.md');
+
+// --as <称呼>（仅一个值，不做大小写处理）
+let addressArg = null;
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === '--as') {
+    argv.splice(i, 1); // 移除 --as 本身
+    if (i >= argv.length || argv[i].startsWith('--')) {
+      fail(1, '--as 需要一个称呼参数');
+    }
+    addressArg = argv[i];
+    argv.splice(i, 1);
+    i--; // 补偿 splice 导致的索引后移
+  }
+}
 
 // --is（可重复；每个 --is 后接零或多个人格名，直到 -- 或结尾）
 const personalityArgs = [];
@@ -102,11 +118,20 @@ const personasDir = path.join(__dirname, '..', 'personas');
 const readTrim = (f) => fs.readFileSync(f, 'utf8').replace(/^\s+|\s+$/g, '');
 
 // 读取身份档案
+const personaPath = path.join(personasDir, personaIp, personaName + '.md');
 let profile;
 try {
-  profile = readTrim(path.join(personasDir, personaIp, personaName + '.md'));
+  profile = readTrim(personaPath);
 } catch {
-  fail(1, `档案不存在: ${path.join(personasDir, personaIp, personaName + '.md')}`);
+  fail(1, `档案不存在: ${personaPath}`);
+}
+
+// 称呼占位符：档案含「【称呼】」时必须通过 --as 传入；替换仅作用于写入
+// 目标的区块（产物），档案源文件始终保持占位符，不会被改动
+const ADDRESS_PLACEHOLDER = '【称呼】';
+if (profile.includes(ADDRESS_PLACEHOLDER)) {
+  if (!addressArg) fail(1, `档案的称呼待定（含${ADDRESS_PLACEHOLDER}占位符），请通过 --as "<称呼>" 传入对用户的称呼`);
+  profile = profile.split(ADDRESS_PLACEHOLDER).join(addressArg);
 }
 
 // 读取人格档案（按 personalitySet 中的顺序）
@@ -227,4 +252,5 @@ const scenarioDesc = scenarioKey ? ' scenario=' + scenarioKey : '';
 const personalityDesc = personalityList.length > 0
   ? 'personality=' + personalityList.map(m => m.key).join(',')
   : 'personality=none';
-console.log(`OK action=${action} identity=${persona} ${personalityDesc}${scenarioDesc} target=${target}`);
+const addressDesc = addressArg ? ' address=' + addressArg : '';
+console.log(`OK action=${action} identity=${persona} ${personalityDesc}${scenarioDesc}${addressDesc} target=${target}`);
