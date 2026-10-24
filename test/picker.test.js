@@ -56,7 +56,8 @@ test('catalog：扫描目录即可还原全部身份，无需手工表格', () =
   assert.equal(teio.name, '东海帝皇');
   assert.equal(teio.en, 'Tokai Teio');
   assert.equal(teio.tagline, '元气小恶魔型');
-  assert.equal(teio.hasImage, false);
+  assert.equal(teio.hasImage, true);
+  assert.equal(teio.image, '/img/uma-musume/tokai-teio.png');
 
   const chocola = all.find((p) => p.id === 'nekopara/chocola');
   assert.equal(chocola.name, '巧克力');
