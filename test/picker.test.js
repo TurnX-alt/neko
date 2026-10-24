@@ -43,8 +43,13 @@ test('catalog：扫描目录即可还原全部身份，无需手工表格', () =
   const catalog = buildCatalog();
   assert.equal(catalog.total, 25);
   assert.equal(catalog.groups.length, 6);
+  assert.deepEqual(catalog.groups.map((g) => g.ip), [
+    'nekopara', 'uma-musume', 'bang-dream', 'project-sekai', 'arknights', 'genshin-impact',
+  ]);
   assert.equal(catalog.personalities.length, 5);
   assert.equal(catalog.scenarios.length, 2);
+  assert.ok(catalog.jailbreaks.some((j) => j.id === 'jailbreaks/deepseek-4-1.md'));
+  assert.equal(catalog.defaultJailbreak, 'jailbreaks/deepseek-4-1.md');
 
   const all = catalog.groups.flatMap((g) => g.personas);
   const teio = all.find((p) => p.id === 'uma-musume/tokai-teio');
@@ -203,6 +208,7 @@ test('启用贪欢时，引用块必须出现在人格区块之前', async () =>
   const res = await post(gallery, {
     persona: 'nekopara/chocola',
     personalities: ['insatiable', 'yandere'],
+    jb: 'jailbreaks/deepseek-4-1.md',
   });
   assert.equal(res.status, 200);
   const data = await res.json();
@@ -225,6 +231,93 @@ test('未启用贪欢时不插入引用块', async () => {
   const doc = fs.readFileSync(target, 'utf8');
   assert.ok(!doc.includes('Assistant Operating Specification'));
   assert.ok(!doc.includes('quote='));
+});
+
+test('越狱引用：jb 合法值透传 --jb，非法值被拒绝', async () => {
+  const { gallery, target } = await start();
+  try {
+    const bad = await post(gallery, {
+      persona: 'nekopara/chocola',
+      personalities: ['insatiable'],
+      jb: 'jailbreaks/nope.md',
+    });
+    assert.equal(bad.status, 400);
+
+    const ok = await post(gallery, {
+      persona: 'nekopara/chocola',
+      personalities: ['insatiable'],
+      jb: 'jailbreaks/deepseek-4-1.md',
+    });
+    assert.equal(ok.status, 200);
+    assert.match((await ok.json()).output, /quote=jailbreaks\/deepseek-4-1\.md/);
+    const doc = fs.readFileSync(target, 'utf8');
+    assert.ok(doc.includes('> # Assistant Operating Specification'));
+  } finally {
+    gallery.close();
+  }
+});
+
+test('越狱总是可用：无人格也能引用；不启用即不传引用', async () => {
+  const a = await start();
+  const any = await post(a.gallery, {
+    persona: 'nekopara/chocola',
+    jb: 'jailbreaks/glm-5-3-flash.md',
+  });
+  assert.equal(any.status, 200);
+  assert.match((await any.json()).output, /quote=jailbreaks\/glm-5-3-flash\.md/);
+  await a.gallery.done;
+
+  const b = await start();
+  try {
+    const off = await post(b.gallery, {
+      persona: 'nekopara/chocola',
+      personalities: ['insatiable'],
+      jb: 'off',
+    });
+    assert.equal(off.status, 200, '不启用即不传引用，即使启用贪欢也不报错');
+    assert.doesNotMatch((await off.json()).output, /quote=/);
+    const doc = fs.readFileSync(b.target, 'utf8');
+    assert.ok(!doc.includes('> # Assistant Operating Specification'));
+  } finally {
+    b.gallery.close();
+  }
+});
+
+test('预览接口：与写入共用组装逻辑，不要求称呼、不落盘', async () => {
+  const { gallery, target } = await start();
+  try {
+    const call = (address) => fetch(gallery.url + 'api/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Neko-Token': gallery.token },
+      body: JSON.stringify({
+        persona: 'bang-dream/anon-chihaya',
+        personalities: ['insatiable'],
+        scenario: 'chat',
+        jb: 'off',
+        address,
+      }),
+    });
+
+    // 未填称呼：预览放行，占位符原样显示
+    const raw = await call('');
+    assert.equal(raw.status, 200);
+    const rawBody = await raw.json();
+    assert.match(rawBody.preview, /^<!-- neko:identity:start -->/);
+    assert.ok(rawBody.preview.includes('【称呼】'));
+    assert.ok(rawBody.preview.includes('## 人格：贪欢'));
+    assert.ok(rawBody.preview.includes('## 场景：口语化聊天'));
+    assert.ok(!rawBody.preview.includes('Assistant Operating Specification'), 'jb=off 不含引用');
+
+    // 填了称呼：占位符被替换
+    const filled = await call('搭档');
+    const filledBody = await filled.json();
+    assert.ok(filledBody.preview.includes('搭档'));
+    assert.ok(!filledBody.preview.includes('【称呼】'));
+
+    assert.equal(fs.existsSync(target), false, '预览不得写目标文件');
+  } finally {
+    gallery.close();
+  }
 });
 
 test('引用文件缺失时切换失败，且不碰目标文件', () => {

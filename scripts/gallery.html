@@ -19,6 +19,8 @@
     --ok: #2f7d52;
     --shadow: 0 1px 2px rgba(20, 16, 10, 0.04), 0 10px 30px -18px rgba(20, 16, 10, 0.35);
     --radius: 14px;
+    color-scheme: light;
+    --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236f675e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -34,6 +36,8 @@
       --ring: rgba(255, 122, 82, 0.28);
       --ok: #6fd39b;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+      color-scheme: dark;
+      --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a69c90' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     }
   }
   :root[data-theme="dark"] {
@@ -64,56 +68,31 @@
   }
   button { font: inherit; color: inherit; }
 
-  .top {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; align-items: center; gap: 14px;
-    padding: 12px 16px;
-    background: color-mix(in srgb, var(--bg) 86%, transparent);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--line);
-  }
-  .brand { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
-  .brand b { font-size: 16px; letter-spacing: 0.02em; }
-  .brand span { color: var(--muted); font-size: 12px; }
-  .search {
-    flex: 1; min-width: 0;
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface);
+  .dock select {
+    appearance: none; -webkit-appearance: none;
     border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 8px 14px;
-    box-shadow: var(--shadow);
+    background: var(--surface) var(--select-arrow) no-repeat right 9px center;
+    border-radius: 8px; padding: 5px 26px 5px 10px; font-size: 12.5px;
+    color: var(--text); max-width: 170px; cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
-  .search input {
-    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
-    color: var(--text); font: inherit;
+  .dock select:hover { border-color: var(--muted); }
+  .dock select:focus-visible {
+    outline: 0; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--ring);
   }
-  .search input::placeholder { color: var(--muted); }
-  .count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 2px;
+    background: var(--accent-soft); color: var(--accent);
+    border-radius: 999px; padding: 4px 6px 4px 10px; font-size: 12px;
+  }
+  .tag-x {
+    border: 0; background: transparent; color: inherit;
+    cursor: pointer; font-size: 13px; line-height: 1; padding: 0 3px;
+  }
+  .tag-x:hover { opacity: 0.7; }
 
-  .chips {
-    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
-    padding: 12px 16px 4px;
-  }
-  .chips::-webkit-scrollbar { display: none; }
-  .chip {
-    flex: 0 0 auto;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    border-radius: 999px;
-    padding: 6px 13px;
-    font-size: 13px;
-    color: var(--muted);
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .chip:hover { color: var(--text); border-color: var(--muted); }
-  .chip[aria-pressed="true"] {
-    background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-  }
-
-  main { max-width: 1120px; margin: 0 auto; padding: 8px 16px 24px; }
+  main { max-width: 1120px; margin: 0 auto; padding: 16px 16px 24px; }
 
   .group { margin-top: 22px; }
   .group-head {
@@ -129,6 +108,7 @@
   }
 
   .card {
+    position: relative;
     display: flex; align-items: center; gap: 12px;
     width: 100%; text-align: left;
     padding: 10px 12px;
@@ -157,18 +137,30 @@
   .card[aria-pressed="true"] .avatar { box-shadow: 0 0 0 2px var(--accent); }
 
   .meta { min-width: 0; flex: 1; }
-  .name { font-size: 14.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .name {
+    font-size: 14.5px; font-weight: 600;
+    display: flex; align-items: baseline; gap: 6px;
+    white-space: nowrap;
+  }
+  .name .zh { flex: 0 0 auto; }
+  .name .en {
+    flex: 0 1 auto; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 11.5px; font-weight: 500; color: var(--muted);
+  }
   .name .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
   .sub {
     color: var(--muted); font-size: 12px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .badge {
-    flex: 0 0 auto;
-    font-size: 10.5px; line-height: 1; padding: 4px 6px; border-radius: 6px;
-    border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--line));
+    position: absolute; top: -9px; right: 0;
+    font-size: 10px; line-height: 1; padding: 3px 7px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--line));
     color: var(--accent);
-    background: transparent;
+    background-color: inherit;
+    box-shadow: 0 1px 3px rgba(20, 16, 10, 0.15);
+    pointer-events: none;
   }
 
   .empty { color: var(--muted); text-align: center; padding: 60px 0; }
@@ -186,19 +178,6 @@
   .dock-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
   .stack { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
   .divider { width: 1px; height: 22px; background: var(--line); }
-  .selection { font-size: 14px; font-weight: 600; }
-  .selection.idle { color: var(--muted); font-weight: 400; }
-
-  .mini {
-    border: 1px solid var(--line); background: var(--surface);
-    border-radius: 8px; padding: 5px 10px; font-size: 12.5px;
-    color: var(--muted); cursor: pointer;
-  }
-  .mini[aria-pressed="true"] {
-    background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
-  }
-  .mini:hover { color: var(--text); }
-  .mini[aria-pressed="true"]:hover { color: var(--accent-ink); }
 
   .address {
     display: flex; align-items: center; gap: 8px;
@@ -222,6 +201,17 @@
   }
   .confirm:hover:not(:disabled) { transform: translateY(-1px); }
   .confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .preview {
+    border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface); color: var(--text);
+    padding: 10px 16px; font-size: 14px; cursor: pointer; white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s, transform 0.12s;
+  }
+  .preview:hover:not(:disabled) {
+    border-color: var(--accent); color: var(--accent); transform: translateY(-1px);
+  }
+  .preview:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .toast {
     position: fixed; left: 50%; bottom: 130px; transform: translate(-50%, 12px);
@@ -259,10 +249,45 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
+  .preview-dlg {
+    border: 1px solid var(--line);
+    background: var(--surface); color: var(--text);
+    border-radius: var(--radius); padding: 0;
+    width: min(860px, 92vw);
+    box-shadow: var(--shadow);
+  }
+  .preview-dlg::backdrop { background: rgba(10, 8, 5, 0.45); backdrop-filter: blur(3px); }
+  .preview-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px; border-bottom: 1px solid var(--line);
+  }
+  .preview-head h3 { margin: 0; font-size: 15px; }
+  .mini-x {
+    border: 0; background: transparent; color: var(--muted);
+    font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  }
+  .mini-x:hover { color: var(--text); background: var(--surface-2); }
+  .preview-dlg textarea {
+    display: block; width: 100%; height: min(56vh, 560px);
+    box-sizing: border-box; resize: vertical;
+    border: 0; outline: 0;
+    background: var(--surface-2); color: var(--text);
+    font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 12px 14px; white-space: pre; overflow: auto;
+  }
+  .preview-foot {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px 14px; border-top: 1px solid var(--line);
+  }
+  .preview-hint { color: var(--muted); font-size: 12px; flex: 1; min-width: 0; }
+  .copy {
+    border: 1px solid var(--accent); background: var(--surface); color: var(--accent);
+    border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer;
+  }
+  .copy:hover { background: var(--accent-soft); }
+
   @media (max-width: 560px) {
-    .top { flex-wrap: wrap; gap: 10px; }
-    .search { order: 3; flex-basis: 100%; }
-    .count { margin-left: auto; }
+    .dock select { flex: 1 1 auto; max-width: none; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .card { flex-direction: column; align-items: flex-start; gap: 8px; }
     .avatar { width: 54px; height: 54px; }
@@ -276,46 +301,46 @@
 </head>
 <body>
 
-<header class="top">
-  <div class="brand"><b>neko</b><span>身份画廊</span></div>
-  <label class="search">
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
-      <path d="m11 11 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    </svg>
-    <input id="q" type="search" placeholder="搜索作品 / 中文名 / 英文名（按 / 聚焦）" autocomplete="off" spellcheck="false">
-  </label>
-  <div class="count" id="count"></div>
-</header>
-
-<nav class="chips" id="ips" aria-label="按作品筛选"></nav>
-
 <main id="groups"></main>
 
 <footer class="dock">
   <div class="dock-inner">
-    <div class="stack">
-      <span class="dock-label">身份</span>
-      <span class="selection idle" id="selName">未选择</span>
+    <div class="stack" id="jbStack">
+      <span class="dock-label">越狱</span>
+      <select id="jbSelect" aria-label="越狱引用"></select>
     </div>
     <div class="divider"></div>
     <div class="stack">
       <span class="dock-label">人格</span>
-      <div class="stack" id="pers"></div>
+      <select id="persSelect" aria-label="添加人格"></select>
+      <span class="stack" id="persTags"></span>
     </div>
     <div class="divider"></div>
     <div class="stack">
       <span class="dock-label">场景</span>
-      <div class="stack" id="scens"></div>
+      <select id="scenSelect" aria-label="场景"></select>
     </div>
     <div class="address" id="addrBox" hidden>
       <label for="addr">称呼</label>
       <input id="addr" type="text" placeholder="训练员 / 博士 / 搭档…" autocomplete="off">
     </div>
     <div class="spacer"></div>
+    <button class="preview" id="previewBtn" disabled title="预览将写入的身份区块">预览</button>
     <button class="confirm" id="confirm" disabled>确认切换</button>
   </div>
 </footer>
+
+<dialog id="previewDlg" class="preview-dlg">
+  <div class="preview-head">
+    <h3>写入预览</h3>
+    <button class="mini-x" id="previewClose" aria-label="关闭">✕</button>
+  </div>
+  <textarea id="previewText" readonly spellcheck="false"></textarea>
+  <div class="preview-foot">
+    <span class="preview-hint">只读 · 与实际写入共用同一份组装逻辑 · 称呼待定的人设未填称呼时占位符原样显示</span>
+    <button class="copy" id="previewCopy">复制全文</button>
+  </div>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -336,11 +361,10 @@
   const state = {
     catalog: null,
     personas: [],
-    ip: 'all',
-    query: '',
     selected: null,
     personalities: new Set(),
     scenario: null,
+    jb: null,
   };
 
   const HUE_STEP = 47;
@@ -386,7 +410,16 @@
     meta.className = 'meta';
     const name = document.createElement('div');
     name.className = 'name';
-    name.textContent = persona.name;
+    const zh = document.createElement('span');
+    zh.className = 'zh';
+    zh.textContent = persona.name;
+    name.appendChild(zh);
+    if (persona.en) {
+      const en = document.createElement('span');
+      en.className = 'en';
+      en.textContent = persona.en;
+      name.appendChild(en);
+    }
     if (state.selected === persona.id) {
       const dot = document.createElement('span');
       dot.className = 'dot';
@@ -394,7 +427,7 @@
     }
     const sub = document.createElement('div');
     sub.className = 'sub';
-    sub.textContent = [persona.en, persona.tagline].filter(Boolean).join(' · ');
+    sub.textContent = persona.tagline || '';
     meta.appendChild(name);
     meta.appendChild(sub);
     card.appendChild(meta);
@@ -410,40 +443,13 @@
     return card;
   }
 
-  function matches(persona) {
-    if (state.ip !== 'all' && persona.ip !== state.ip) return false;
-    if (!state.query) return true;
-    const q = state.query.toLowerCase();
-    return [persona.name, persona.en, persona.tagline, persona.ip, persona.label || '']
-      .some((v) => (v || '').toLowerCase().includes(q));
-  }
-
-  function renderIps() {
-    const box = $('ips');
-    box.textContent = '';
-    const items = [{ ip: 'all', label: '全部', count: state.catalog.total }]
-      .concat(state.catalog.groups.map((g) => ({ ip: g.ip, label: g.label, count: g.count })));
-    for (const item of items) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'chip';
-      chip.textContent = item.label + ' ' + item.count;
-      chip.setAttribute('aria-pressed', String(state.ip === item.ip));
-      chip.addEventListener('click', () => { state.ip = item.ip; renderIps(); renderGroups(); });
-      box.appendChild(chip);
-    }
-  }
-
   function renderGroups() {
     const main = $('groups');
     main.textContent = '';
-    let shown = 0;
 
     for (const group of state.catalog.groups) {
-      if (state.ip !== 'all' && state.ip !== group.ip) continue;
-      const list = group.personas.filter(matches);
+      const list = group.personas;
       if (list.length === 0) continue;
-      shown += list.length;
 
       const section = document.createElement('section');
       section.className = 'group';
@@ -464,55 +470,84 @@
       main.appendChild(section);
     }
 
-    if (shown === 0) {
+    if (main.children.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'empty';
-      empty.textContent = '没有匹配的身份 —— 换个词试试？';
+      empty.textContent = '没有可用身份 —— 检查 personas/ 目录';
       main.appendChild(empty);
     }
-    $('count').textContent = shown + ' / ' + state.catalog.total;
   }
 
   function renderLayers() {
-    const persBox = $('pers');
-    persBox.textContent = '';
+    // 人格：下拉添加、标签移除（可叠加多个）
+    const persSel = $('persSelect');
+    const tags = $('persTags');
+    persSel.textContent = '';
+    const ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = state.personalities.size ? '＋ 再加一个…' : '＋ 选择人格…';
+    persSel.appendChild(ph);
     for (const p of state.catalog.personalities) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'mini';
-      chip.textContent = p.name;
-      chip.title = p.description || '';
-      chip.setAttribute('aria-pressed', String(state.personalities.has(p.id)));
-      chip.addEventListener('click', () => {
-        if (state.personalities.has(p.id)) state.personalities.delete(p.id);
-        else state.personalities.add(p.id);
+      if (state.personalities.has(p.id)) continue;
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.name;
+      opt.title = p.description || '';
+      persSel.appendChild(opt);
+    }
+    ph.disabled = persSel.options.length === 1;
+    tags.textContent = '';
+    for (const id of state.personalities) {
+      const p = state.catalog.personalities.find((x) => x.id === id);
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = p ? p.name : id;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'tag-x';
+      x.textContent = '×';
+      x.setAttribute('aria-label', '移除' + (p ? p.name : id));
+      x.addEventListener('click', () => {
+        state.personalities.delete(id);
         renderLayers();
       });
-      persBox.appendChild(chip);
+      tag.appendChild(x);
+      tags.appendChild(tag);
     }
 
-    const scenBox = $('scens');
-    scenBox.textContent = '';
-    const none = document.createElement('button');
-    none.type = 'button';
-    none.className = 'mini';
+    // 场景：单选下拉
+    const scenSel = $('scenSelect');
+    scenSel.textContent = '';
+    const none = document.createElement('option');
+    none.value = '';
     none.textContent = '不启用';
-    none.setAttribute('aria-pressed', String(state.scenario === null));
-    none.addEventListener('click', () => { state.scenario = null; renderLayers(); });
-    scenBox.appendChild(none);
+    scenSel.appendChild(none);
     for (const s of state.catalog.scenarios) {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'mini';
-      chip.textContent = s.name;
-      chip.title = s.description || '';
-      chip.setAttribute('aria-pressed', String(state.scenario === s.id));
-      chip.addEventListener('click', () => {
-        state.scenario = state.scenario === s.id ? null : s.id;
-        renderLayers();
-      });
-      scenBox.appendChild(chip);
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.name;
+      opt.title = s.description || '';
+      scenSel.appendChild(opt);
     }
+    scenSel.value = state.scenario || '';
+
+    // 越狱：引用文件下拉（总是可用；「不启用」= 不传引用，无自动强制引用）
+    const list = state.catalog.jailbreaks || [];
+    const jbSel = $('jbSelect');
+    $('jbStack').hidden = list.length === 0;
+    jbSel.textContent = '';
+    const off = document.createElement('option');
+    off.value = 'off';
+    off.textContent = '不启用';
+    jbSel.appendChild(off);
+    for (const j of list) {
+      const opt = document.createElement('option');
+      opt.value = j.id;
+      opt.textContent = j.name + (j.id === state.catalog.defaultJailbreak ? '（默认）' : '');
+      jbSel.appendChild(opt);
+    }
+    jbSel.value = state.jb || state.catalog.defaultJailbreak || 'off';
+    if (!state.jb) state.jb = jbSel.value;
   }
 
   function select(persona) {
@@ -529,11 +564,9 @@
         dot.remove();
       }
     }
-    const selName = $('selName');
-    selName.textContent = persona.name + ' · ' + (persona.en || persona.ip);
-    selName.classList.remove('idle');
     $('addrBox').hidden = !persona.needsAddress;
     $('confirm').disabled = false;
+    $('previewBtn').disabled = false;
     if (persona.needsAddress) setTimeout(() => $('addr').focus(), 30);
   }
 
@@ -567,6 +600,7 @@
           persona: state.selected,
           personalities: [...state.personalities],
           scenario: state.scenario,
+          jb: state.jb || null,
           address,
         }),
       });
@@ -579,6 +613,36 @@
       toast(String(err.message || err));
       btn.disabled = false;
       btn.textContent = '确认切换';
+    }
+  }
+
+  async function preview() {
+    if (!state.selected) return;
+    const btn = $('previewBtn');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    btn.textContent = '预览中…';
+    try {
+      const res = await fetch('/api/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Neko-Token': TOKEN },
+        body: JSON.stringify({
+          persona: state.selected,
+          personalities: [...state.personalities],
+          scenario: state.scenario,
+          jb: state.jb || null,
+          address: $('addr').value.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+      $('previewText').value = data.preview || '';
+      $('previewDlg').showModal();
+    } catch (err) {
+      toast(String(err.message || err));
+    } finally {
+      btn.disabled = !state.selected;
+      btn.textContent = orig;
     }
   }
 
@@ -612,10 +676,9 @@
       .then((catalog) => {
         state.catalog = catalog;
         for (const g of catalog.groups) {
-          for (const p of g.personas) { p.label = g.label; state.personas.push(p); }
+          for (const p of g.personas) state.personas.push(p);
         }
         $('addrBox').hidden = true;
-        renderIps();
         renderGroups();
         renderLayers();
         applyPrefill();
@@ -627,7 +690,38 @@
       });
   }
 
-  $('q').addEventListener('input', (e) => { state.query = e.target.value.trim(); renderGroups(); });
+  $('persSelect').addEventListener('change', (e) => {
+    if (e.target.value) { state.personalities.add(e.target.value); renderLayers(); }
+  });
+  $('scenSelect').addEventListener('change', (e) => {
+    state.scenario = e.target.value || null;
+    renderLayers();
+  });
+  $('jbSelect').addEventListener('change', (e) => {
+    state.jb = e.target.value || null;
+  });
+  $('previewBtn').addEventListener('click', preview);
+  $('previewClose').addEventListener('click', () => $('previewDlg').close());
+  $('previewDlg').addEventListener('click', (e) => {
+    if (e.target === $('previewDlg')) $('previewDlg').close();
+  });
+  $('previewCopy').addEventListener('click', async () => {
+    const text = $('previewText').value;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      ok = true;
+    } catch {
+      // 剪贴板 API 不可用时的兜底（选中 + execCommand）
+      const ta = $('previewText');
+      ta.focus();
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch { ok = false; }
+    }
+    const btn = $('previewCopy');
+    btn.textContent = ok ? '已复制 ✓' : '复制失败';
+    setTimeout(() => { btn.textContent = '复制全文'; }, 1500);
+  });
   if (typeof ResizeObserver === 'function') {
     new ResizeObserver(fitPadding).observe(document.querySelector('.dock'));
   }
@@ -636,19 +730,9 @@
   $('done').addEventListener('click', () => { $('done').hidden = true; });
 
   document.addEventListener('keydown', (e) => {
-    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
-    if (e.key === '/' && !typing) {
-      e.preventDefault();
-      $('q').focus();
-    } else if (e.key === 'Escape') {
-      if (typing) {
-        $('q').value = '';
-        state.query = '';
-        renderGroups();
-        document.activeElement.blur();
-      }
-    } else if (e.key === 'Enter' && !typing) {
-      if (state.selected && $('done').hidden) submit();
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === 'Enter' && !typing) {
+      if (!$('previewDlg').open && state.selected && $('done').hidden) submit();
     }
   });
 

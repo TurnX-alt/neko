@@ -23,6 +23,7 @@ const ROOT = path.join(__dirname, '..');
 const PERSONAS_DIR = path.join(ROOT, 'personas');
 const PERSONALITIES_DIR = path.join(ROOT, 'personalities');
 const SCENARIOS_DIR = path.join(ROOT, 'scenarios');
+const JAILBREAKS_DIR = path.join(ROOT, 'jailbreaks');
 
 const IMAGE_EXTS = ['.png', '.webp', '.jpg', '.jpeg'];
 
@@ -35,7 +36,15 @@ const IP_LABELS = {
   arknights: '明日方舟 / 终末地',
   'uma-musume': '赛马娘 Pretty Derby',
 };
-const IP_ORDER = Object.keys(IP_LABELS);
+// 画廊分组展示顺序（与 IP_LABELS 的键序解耦，调整排布只动这里）。
+const IP_ORDER = [
+  'nekopara',
+  'uma-musume',
+  'bang-dream',
+  'project-sekai',
+  'arknights',
+  'genshin-impact',
+];
 
 // 人格与场景的补充说明（档案正文是规则文本，不适合当卡片副标题）。
 const PERSONALITY_BLURBS = {
@@ -51,6 +60,24 @@ const SCENARIO_BLURBS = {
 };
 
 const ADDRESS_PLACEHOLDER = '【称呼】';
+
+// 「前置引用」的默认文件（与 switch.js 的 QUOTE_REQUIRED 保持一致）。
+const DEFAULT_JAILBREAK = 'jailbreaks/deepseek-4-1.md';
+
+/** jailbreaks/ 子模块下的引用文件清单，越狱下拉的选项来源。 */
+function listJailbreaks() {
+  let entries;
+  try {
+    entries = fs.readdirSync(JAILBREAKS_DIR, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((e) => e.isFile() && !e.name.startsWith('.'))
+    .map((e) => e.name)
+    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+    .map((f) => ({ id: 'jailbreaks/' + f, name: f.replace(/\.[^.]+$/, '') }));
+}
 
 /** 首个标题形如 `## 人设：中文名（English）`；括号可能是全角或半角。 */
 function parseHeading(content, kind) {
@@ -172,6 +199,8 @@ function buildCatalog() {
     groups,
     personalities: listLayers(PERSONALITIES_DIR, '人格', PERSONALITY_BLURBS),
     scenarios: listLayers(SCENARIOS_DIR, '场景', SCENARIO_BLURBS),
+    jailbreaks: listJailbreaks(),
+    defaultJailbreak: DEFAULT_JAILBREAK,
     total: groups.reduce((n, g) => n + g.count, 0),
   };
 }

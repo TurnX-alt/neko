@@ -25,6 +25,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const catalogLib = require('./catalog');
+const { buildBlock } = require('./switch');
 
 const SWITCH_JS = path.join(__dirname, 'switch.js');
 const GALLERY_HTML = path.join(__dirname, 'gallery.html');
@@ -148,6 +149,7 @@ function createGallery(options = {}) {
   }
   const personalityIds = new Set(catalog.personalities.map((p) => p.id));
   const scenarioIds = new Set(catalog.scenarios.map((s) => s.id));
+  const jailbreakIds = new Set(catalog.jailbreaks.map((j) => j.id));
 
   // 预填：把已经识别出来的人格/场景/人设带进画廊（非法值静默丢弃）
   const wanted = opts.prefill || {};
@@ -175,7 +177,8 @@ function createGallery(options = {}) {
     }, 400);
   }
 
-  function handleSelect(body) {
+  /** 校验选人请求体，返回 { status, body }；通过时 body 含 persona/personalities/scenario/jb/address。 */
+  function validateSelection(body) {
     let payload;
     try {
       payload = JSON.parse(body || '{}');
@@ -193,12 +196,23 @@ function createGallery(options = {}) {
     if (scenario && !scenarioIds.has(scenario)) {
       return { status: 400, body: { error: '未知的场景: ' + scenario } };
     }
+    // 「不启用」（off）与未选择等价：不向 switch.js 传任何 --jb
+    const jb = payload.jb && payload.jb !== 'off' ? String(payload.jb) : null;
+    if (jb && !jailbreakIds.has(jb)) {
+      return { status: 400, body: { error: '未知的越狱引用: ' + jb } };
+    }
     const address = typeof payload.address === 'string' ? payload.address.trim() : '';
-    if (persona.needsAddress && !address) {
+    return { status: 200, body: { persona, personalities, scenario, jb, address } };
+  }
+
+  function handleSelect(body) {
+    const checked = validateSelection(body);
+    if (checked.status !== 200) return checked;
+    const sel = checked.body;
+    if (sel.persona.needsAddress && !sel.address) {
       return { status: 400, body: { error: '该人设的称呼待定，请先填写称呼', code: 'ADDRESS_REQUIRED' } };
     }
-
-    return { status: 200, body: { ok: true, persona, personalities, scenario, address } };
+    return { status: 200, body: { ok: true, persona: sel.persona, personalities: sel.personalities, scenario: sel.scenario, jb: sel.jb, address: sel.address } };
   }
 
   function runSwitch(selection) {
@@ -208,6 +222,7 @@ function createGallery(options = {}) {
         args.push('--is', ...selection.personalities);
       }
       if (selection.scenario) args.push('--in', selection.scenario);
+      if (selection.jb) args.push('--jb', selection.jb);
       if (selection.address) args.push('--as', selection.address);
       if (opts.target) args.push('--target', opts.target);
 
@@ -245,6 +260,36 @@ function createGallery(options = {}) {
 
       if (req.method === 'GET' && pathname === '/api/catalog') {
         return sendJson(res, 200, catalog);
+      }
+
+      // 预览：与 /api/select 同一套校验，但不要求称呼、不落盘，
+      // 返回 switch.js 将写入的区块全文（buildBlock 共用实现）
+      if (req.method === 'POST' && pathname === '/api/preview') {
+        if (req.headers['x-neko-token'] !== token) {
+          return sendJson(res, 403, { error: 'token 校验失败' });
+        }
+        let body;
+        try {
+          body = await readBody(req);
+        } catch (e) {
+          return sendJson(res, 413, { error: e.message });
+        }
+        const checked = validateSelection(body);
+        if (checked.status !== 200) return sendJson(res, checked.status, checked.body);
+        const sel = checked.body;
+        try {
+          const preview = buildBlock({
+            persona: sel.persona.id,
+            personalities: sel.personalities,
+            scenario: sel.scenario,
+            address: sel.address || null,
+            allowMissingAddress: true,
+            jb: sel.jb,
+          }).block;
+          return sendJson(res, 200, { ok: true, preview });
+        } catch (e) {
+          return sendJson(res, 422, { error: e.message });
+        }
       }
 
       if (req.method === 'GET' && pathname.startsWith('/img/')) {
