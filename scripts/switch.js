@@ -14,6 +14,8 @@
  *   --as <称呼>    对用户的称呼；档案含「【称呼】」占位符时必填——替换仅
  *                  作用于写入目标的区块（产物），档案源文件不会被改动
  *   --target <f>   目标指令文件，默认 ~/.claude/AGENTS.md（仅供测试覆盖）
+ *   --jb <path>    覆盖「前置引用」文件路径；目前仅「贪欢」需要，默认
+ *                  jailbreaks/deepseek-4-1.md（相对技能根目录）
  *
  * 职责边界: 本脚本只负责「读档案 + 替换目标区块」这一件事，不做任何参数
  * 归一化——参数标准化由 SKILL 流程（AI 层）负责，脚本只认上面列出的标准值。
@@ -21,7 +23,10 @@
  * 行为:
  *   1. 读取本脚本同级上级目录下 personas/<ip>/<name>.md（必须存在）；
  *   2. 对每个 --is 参数，读取 personalities/<personality>.md（大小写不敏感）；
- *   3. 在目标文件中整块替换 <!-- neko:identity:start --> ~
+ *   3. 启用的人格若要求「前置引用」（贪欢 → jailbreaks/deepseek-4-1.md），
+ *      把该文件整篇转成 markdown 引用块，插在人格区块之前；文件缺失直接
+ *      报错退出，绝不静默跳过；
+ *   4. 在目标文件中整块替换 <!-- neko:identity:start --> ~
  *      <!-- neko:identity:end -->（含两个标记行本身）；标记不存在时追加到
  *      首个一级标题之后，仍无则追加到文件末尾。标记之外的内容一律不动。
  *
@@ -36,6 +41,12 @@ const os = require('os');
 
 const START = '<!-- neko:identity:start -->';
 const END = '<!-- neko:identity:end -->';
+
+// 需要「人格前追加 markdown 引用」的人格 → 默认引用文件（相对技能根目录）。
+// 文件缺失视为错误：宁可切换失败，也不要悄悄少一段前提。
+const QUOTE_REQUIRED = {
+  insatiable: 'jailbreaks/deepseek-4-1.md',
+};
 
 function fail(code, msg) {
   console.error('ERROR ' + msg);
@@ -82,6 +93,20 @@ for (let i = 0; i < argv.length; i++) {
     if (values.length === 0) fail(1, '--is 需要至少一个人格名称参数');
     personalityArgs.push(...values);
     i--; // 补偿 splice 导致的索引后移
+  }
+}
+
+// --jb <path>（仅一个值，覆盖默认引用文件）
+let jbArg = null;
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === '--jb') {
+    argv.splice(i, 1);
+    if (i >= argv.length || argv[i].startsWith('--')) {
+      fail(1, '--jb 需要一个文件路径参数');
+    }
+    jbArg = argv[i];
+    argv.splice(i, 1);
+    i--;
   }
 }
 
@@ -161,6 +186,25 @@ for (const key of personalitySet) {
   personalityList.push({ key, content });
 }
 
+// 读取「前置引用」：启用的人格里有需要引用的人格时，整篇转成引用块
+const quotePersonality = personalityList.map((p) => p.key).find((k) => QUOTE_REQUIRED[k]);
+let quoteContent = null;
+if (quotePersonality) {
+  const rel = jbArg || QUOTE_REQUIRED[quotePersonality];
+  const quotePath = path.isAbsolute(rel) ? rel : path.join(__dirname, '..', rel);
+  let raw;
+  try {
+    raw = readTrim(quotePath);
+  } catch {
+    fail(1, `人格「${quotePersonality}」需要在人格前追加引用 ${rel}，但文件不存在或无法读取: ${quotePath}` +
+      '（若是子模块，先执行 git submodule update --init）');
+  }
+  quoteContent = raw
+    .split('\n')
+    .map((line) => (line.trim() === '' ? '>' : '> ' + line))
+    .join('\n');
+}
+
 // 读取场景档案（如果指定了 --in）
 const scenariosDir = path.join(__dirname, '..', 'scenarios');
 let scenarioContent = null;
@@ -200,6 +244,10 @@ const lines = [
 
 if (scenarioContent) {
     lines.push(scenarioContent, '');
+  }
+
+  if (quoteContent) {
+    lines.push(quoteContent, '');
   }
 
   if (personalityList.length > 0) {
@@ -253,4 +301,5 @@ const personalityDesc = personalityList.length > 0
   ? 'personality=' + personalityList.map(m => m.key).join(',')
   : 'personality=none';
 const addressDesc = addressArg ? ' address=' + addressArg : '';
-console.log(`OK action=${action} identity=${persona} ${personalityDesc}${scenarioDesc}${addressDesc} target=${target}`);
+const quoteDesc = quoteContent ? ' quote=' + (jbArg || QUOTE_REQUIRED[quotePersonality]) : '';
+console.log(`OK action=${action} identity=${persona} ${personalityDesc}${scenarioDesc}${addressDesc}${quoteDesc} target=${target}`);
